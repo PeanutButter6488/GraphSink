@@ -31,6 +31,7 @@ LLaGA/dataset/
 LLaGA/results/
 LLaGA/results_*/
 LLaGA/wandb/
+LLaGA/analysis/
 
 # ---- TEA-GLM ----
 TEA-GLM/llama-2-7b-chat-hf/
@@ -38,6 +39,7 @@ TEA-GLM/vicuna-7b-v1.5/
 TEA-GLM/saved_model/
 TEA-GLM/results/
 TEA-GLM/wandb/
+TEA-GLM/analysis/
 
 # ---- InstructGLM ----
 # Downloaded base models
@@ -54,3 +56,4 @@ InstructGLM/llama_2_*/
 InstructGLM/Gfirst_*/
 InstructGLM/pub_*/
 InstructGLM/pic/
+InstructGLM/analysis/
