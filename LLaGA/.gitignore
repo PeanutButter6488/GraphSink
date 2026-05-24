@@ -1,0 +1,17 @@
+*.slurm
+wandb/
+*.codex
+*.vscode
+*.log
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.json
+*.csv
+*.tsv
+*.pdf
+*.png
+*.jpg
+__pycache__/
+.ipynb_checkpoints/
