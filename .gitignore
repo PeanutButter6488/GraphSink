@@ -1,0 +1,56 @@
+# Editor / IDE
+.claude/
+.vscode/
+.codex
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.ipynb_checkpoints/
+
+# Other Skips
+wandb/
+graphprompter/
+tests/
+utils/plots
+
+# Logs and slurm
+logs/
+logs_*/
+*.slurm
+*.out
+*.err
+slurm-*.out
+
+# ---- LLaGA ----
+LLaGA/checkpoint/
+LLaGA/dataset/
+LLaGA/results/
+LLaGA/results_*/
+LLaGA/wandb/
+
+# ---- TEA-GLM ----
+TEA-GLM/llama-2-7b-chat-hf/
+TEA-GLM/vicuna-7b-v1.5/
+TEA-GLM/saved_model/
+TEA-GLM/results/
+TEA-GLM/wandb/
+
+# ---- InstructGLM ----
+# Downloaded base models
+InstructGLM/7B/
+InstructGLM/7B_org/
+# Preprocessed datasets
+InstructGLM/Arxiv/
+InstructGLM/Cora/
+InstructGLM/PubMed/
+# Training checkpoints
+InstructGLM/*.pth
+InstructGLM/llama_1_*/
+InstructGLM/llama_2_*/
+InstructGLM/Gfirst_*/
+InstructGLM/pub_*/
+InstructGLM/pic/
