@@ -1,0 +1,12 @@
+/accelerate_config
+/data
+/instruction
+/results
+/saved_model
+/wandb
+/.vscode
+/analysis
+/llama-2-7b-chat-hf
+/vicuna-7b-v1.5
+/*.slurm
+**/__pycache__/
