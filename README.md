@@ -1,10 +1,33 @@
-# GraphSink: Graph Sink Analysis for Graph Language Models
+<!-- # GraphSink: Graph Sink Analysis for Graph Language Models -->
+<h1 align="center">When Graph Tokens Sink: A Mechanistic Analysis of Graph Language Models</h1>
 
-This repository contains the experimental code for our study of **attention sinks** in Graph Language Models (GLMs). Attention sinks are graph tokens that consistently receive disproportionate attention and spike on a small set of hidden-state dimensions at the second-to-last transformer layer, largely independent of the downstream query. We probe whether these tokens are *causally* important for task performance, or whether they are interpretable artifacts of the LLM's attention machinery — and we do this in parallel across two representative GLMs so the findings are not specific to one architecture.
+<p align="center">
+  <a href="https://arxiv.org/abs/2606.03712"><img src="https://img.shields.io/badge/arXiv-2606.03712-b31b1b?style=flat&labelColor=222222"></a>
+</p>
 
-The two GLMs analyzed are [LLaGA](LLaGA/) (Chen et al., ICML 2024) and [TEA-GLM](TEA-GLM/) (Wang et al., NeurIPS 2024). Both wrap a frozen Vicuna-7B backbone behind a learned graph projector, but differ in the projector design and the number of graph tokens fed to the LLM (LLaGA varies by template; TEA-GLM is fixed at K=5). All experiments documented here are run on the **node-classification (NC)** task across **Cora**, **PubMed**, and **ogbn-arxiv**. For LP-task variants, see [evaluation.md](evaluation.md).
+<p align="center"><em>by</em></p>
+
+<p align="center">
+  <b>Ding Zhang</b><sup>1</sup> &nbsp;&middot;&nbsp;
+  <b>Runtao Zhou</b><sup>1</sup> &nbsp;&middot;&nbsp;
+  <b>Wenqing Zheng</b><sup>2</sup> &nbsp;&middot;&nbsp;
+  <b>Rizal Fathony</b><sup>2</sup> &nbsp;&middot;&nbsp;
+  <b>Bayan Bruss</b><sup>2</sup> &nbsp;&middot;&nbsp;
+  <b>Chirag Agarwal</b><sup>1</sup>
+</p>
+
+<p align="center">
+  <sup>1</sup>University of Virginia &nbsp;&nbsp;&nbsp; <sup>2</sup>Capital One
+</p>
+
+
+This repository contains the code for the paper, **When Graph Tokens Sink: A Mechanistic Analysis of Graph Language Models**. We provide a mechanistic analysis on two popular graph language models: [LLaGA](LLaGA/) (Chen et al) and [TEA-GLM](TEA-GLM/) (Wang et al). Both wrap a frozen Vicuna-7B backbone behind a learned graph projector, but differ in the projector design and the number of graph tokens K fed to the LLM (In our experiments, LLaGA is fixed at K=111; TEA-GLM is fixed at K=5). All experiments documented here are run on the **node-classification (NC)** task across **Cora**, **PubMed**, and **ogbn-arxiv**.
 
 For environment setup, dataset download, model training, and upstream attribution, see [LLaGA/README.md](LLaGA/README.md) and [TEA-GLM/README.md](TEA-GLM/README.md). This top-level README only documents the four sink-analysis experiments we ran on top of those models.
+
+<p align="center">
+  <img src="figure.png" alt="Graph sink token distribution for LLaGA and TEA-GLM" width="95%">
+</p>
 
 ## Repository layout
 
@@ -28,18 +51,18 @@ glm_sink/
 └── README.md                       # this file
 ```
 
-## The four sink experiments
+## Four Main Findings
 
 Each subsection describes the experiment conceptually, then gives a minimal run snippet and the output locations, separately for LLaGA and TEA-GLM.
 
 ### 1. Sink token identification
 
-**Concept.** For each test sample we extract the per-token hidden state at the second-to-last layer, apply RMSNorm, and score each graph token by its magnitude on a small set of "spike dimensions" discovered empirically from training-time activations. Tokens whose score exceeds a per-model threshold are flagged as sinks. LLaGA's NC spike dims are `[1512, 2298, 2533]`; TEA-GLM's are `[1512, 2533, 3431]` (both in a 4096-dim hidden space; threshold 35.0 for TEA-GLM).
+**Concept.** For each test sample we extract the per-token hidden state at the second-to-last layer, apply RMSNorm, and score each graph token by its magnitude on a small set of "spike dimensions" discovered empirically from training-time activations. Tokens whose score exceeds a per-model threshold are flagged as graph sink tokens.
 
 **LLaGA.**
 - Detection utilities: [LLaGA/utils/activation_probes.py](LLaGA/utils/activation_probes.py), [LLaGA/utils/dimension_pruning.py](LLaGA/utils/dimension_pruning.py) (`find_spike_dims`).
-- Discovery pipeline (stages `discover_dims → detect_tokens → discover_spikes → detect_and_analyze`): [LLaGA/eval/run_graph_sink.py](LLaGA/eval/run_graph_sink.py).
-- Run: `python eval/run_graph_sink.py --dataset cora --task nc --template ND --stage detect_and_analyze`.
+- Pipeline (stages `discover_dims → detect_tokens → discover_spikes → detect_and_analyze`).
+- Run: `bash scripts/eval_multi.sh` (Note: if there are existing sink token records, add the flag `--use_existing_sink_records`).
 - Outputs: `LLaGA/analysis/{dataset}_{template}/sink_records.jsonl`, `activation_topdims.json`, `sink_dim_mean_activation.png`, `llaga_topdims_counts.png`.
 
 **TEA-GLM.**
@@ -72,7 +95,7 @@ We test the *causal* role of sinks via three interventions: (a) prune sinks at i
 **LLaGA.**
 - Driver: [LLaGA/eval/eval_pretrain.py](LLaGA/eval/eval_pretrain.py) with `--pruning --pruning_mode {sink_token|control_nonsink_token|sink_dim|control_nonsink_dim}`, granularity `top2` or `all`, and `--sink_records_path` pointing at the JSONL from Experiment 1.
 - Wrappers: [LLaGA/scripts/pruning_sink.sh](LLaGA/scripts/pruning_sink.sh), [LLaGA/scripts/pruning_sink_multi.sh](LLaGA/scripts/pruning_sink_multi.sh), [LLaGA/scripts/pruning.sh](LLaGA/scripts/pruning.sh).
-- Outputs: `LLaGA/results_phc3mn/{dataset}_nc_*_predictions_prune_{sinktoken|nonsinktoken}_{top2|all}_run{N}.jsonl`.
+- Outputs: `LLaGA/results/{dataset}_nc_*_predictions_prune_{sinktoken|nonsinktoken}_{top2|all}_run{N}.jsonl`.
 - Aggregation: [LLaGA/eval/eval_res_pruning.py](LLaGA/eval/eval_res_pruning.py) — e.g. `python eval/eval_res_pruning.py --task nc --target sink --pruning_mode top2`.
 
 **TEA-GLM.**
@@ -87,7 +110,7 @@ We test the *causal* role of sinks via three interventions: (a) prune sinks at i
 
 - Driver: [LLaGA/eval/eval_pretrain.py](LLaGA/eval/eval_pretrain.py) with `--reposition_mode {front_top2|front_all}`. Helper: [LLaGA/utils/graph_remap.py](LLaGA/utils/graph_remap.py).
 - Wrapper: [LLaGA/scripts/reposition.sh](LLaGA/scripts/reposition.sh).
-- Outputs: `LLaGA/results_phc3mn/{dataset}_nc_*_predictions_reposition_front_{top2|all}.jsonl`; post-reposition sink statistics in `LLaGA/analysis/{dataset}_{template}/reposition_front_all_sink_ratio.json`.
+- Outputs: `LLaGA/results/{dataset}_nc_*_predictions_reposition_front_{top2|all}.jsonl`; post-reposition sink statistics in `LLaGA/analysis/{dataset}_{template}/reposition_front_all_sink_ratio.json`.
 - Evaluators: [LLaGA/eval/eval_res_reposition_swap.py](LLaGA/eval/eval_res_reposition_swap.py) (accuracy), [LLaGA/eval/eval_reposition_sink_ratio.py](LLaGA/eval/eval_reposition_sink_ratio.py) (sink survival/migration).
 
 #### 3c. Sink ↔ non-sink swap
@@ -97,7 +120,7 @@ We test the *causal* role of sinks via three interventions: (a) prune sinks at i
 **LLaGA.**
 - Driver: `eval_pretrain.py --reposition_mode swap_sink_nonsink --reposition_seed S`.
 - Wrapper: [LLaGA/scripts/reposition_swap_multi.sh](LLaGA/scripts/reposition_swap_multi.sh) (multi-run with varying seeds).
-- Outputs: `LLaGA/results_phc3mn/{dataset}_nc_*_predictions_reposition_swap_sink_nonsink_k{K}_run{N}.jsonl`.
+- Outputs: `LLaGA/results/{dataset}_nc_*_predictions_reposition_swap_sink_nonsink_k{K}_run{N}.jsonl`.
 - Aggregation: [LLaGA/eval/eval_res_reposition_swap.py](LLaGA/eval/eval_res_reposition_swap.py).
 
 **TEA-GLM.**
@@ -133,14 +156,14 @@ After pruning all detected sinks, we run sink detection again on the shortened s
 |---|---|---|---|---|
 | 1. Sink identification | [`eval/run_graph_sink.py`](LLaGA/eval/run_graph_sink.py) | `LLaGA/analysis/{ds}_{tmpl}/sink_records.jsonl` | [`analyze_attention_sinks.py`](TEA-GLM/analyze_attention_sinks.py) + [`scripts/test_citation.sh`](TEA-GLM/scripts/test_citation.sh) | `TEA-GLM/analysis/{ds}/global_stats/*_sink_records.jsonl` |
 | 2. Cross-attention | `eval_pretrain.py --attention_probe` | `.../cross_attention_layer_vs_graph_heatmap.png` | [`scripts/test_citation.sh`](TEA-GLM/scripts/test_citation.sh) | `.../global_stats/*_query_to_graph_attention.{json,png}` |
-| 3a. Sink pruning | [`scripts/pruning_sink_multi.sh`](LLaGA/scripts/pruning_sink_multi.sh) | `results_phc3mn/*_predictions_prune_*.jsonl` | [`scripts/test_citation_sinkanalysis.sh`](TEA-GLM/scripts/test_citation_sinkanalysis.sh) | `results/{ds}/*_prune_*_seed{S}_run{N}_*.txt` |
-| 3a-control. Random non-sink | [`scripts/pruning.sh`](LLaGA/scripts/pruning.sh) (`control_nonsink_token`) | `results_phc3mn/*_predictions_prune_nonsinktoken_*.jsonl` | [`scripts/test_citation_sinkanalysis_random.sh`](TEA-GLM/scripts/test_citation_sinkanalysis_random.sh) | `results/{ds}/*_prune_random2_seed{S}_*.txt` |
-| 3b. Reposition to front | [`scripts/reposition.sh`](LLaGA/scripts/reposition.sh) | `results_phc3mn/*_predictions_reposition_front_*.jsonl` | — (LLaGA-only) | — |
-| 3c. Sink↔non-sink swap | [`scripts/reposition_swap_multi.sh`](LLaGA/scripts/reposition_swap_multi.sh) | `results_phc3mn/*_predictions_reposition_swap_sink_nonsink_k*_run*.jsonl` | [`scripts/test_citation_reposition.sh`](TEA-GLM/scripts/test_citation_reposition.sh) | `results/{ds}/*_reposition_swap_k*_seed*_*.txt` |
+| 3a. Sink pruning | [`scripts/pruning_sink_multi.sh`](LLaGA/scripts/pruning_sink_multi.sh) | `results/*_predictions_prune_*.jsonl` | [`scripts/test_citation_sinkanalysis.sh`](TEA-GLM/scripts/test_citation_sinkanalysis.sh) | `results/{ds}/*_prune_*_seed{S}_run{N}_*.txt` |
+| 3a-control. Random non-sink | [`scripts/pruning.sh`](LLaGA/scripts/pruning.sh) (`control_nonsink_token`) | `results/*_predictions_prune_nonsinktoken_*.jsonl` | [`scripts/test_citation_sinkanalysis_random.sh`](TEA-GLM/scripts/test_citation_sinkanalysis_random.sh) | `results/{ds}/*_prune_random2_seed{S}_*.txt` |
+| 3b. Reposition to front | [`scripts/reposition.sh`](LLaGA/scripts/reposition.sh) | `results/*_predictions_reposition_front_*.jsonl` | — (LLaGA-only) | — |
+| 3c. Sink & non-sink swap | [`scripts/reposition_swap_multi.sh`](LLaGA/scripts/reposition_swap_multi.sh) | `results/*_predictions_reposition_swap_sink_nonsink_k*_run*.jsonl` | [`scripts/test_citation_reposition.sh`](TEA-GLM/scripts/test_citation_reposition.sh) | `results/{ds}/*_reposition_swap_k*_seed*_*.txt` |
 | 3d. Sink re-emergence | [`scripts/reoccur_sink.sh`](LLaGA/scripts/reoccur_sink.sh) | `analysis/{ds}_{tmpl}/sink_reoccur.jsonl` | [`scripts/test_citation_reoccur.sh`](TEA-GLM/scripts/test_citation_reoccur.sh) | `analysis/{ds}/global_stats/*_sink_reoccur_*.{jsonl,json,png}` |
 | 4. Logit lens | [`scripts/eval_logit_lens.sh`](LLaGA/scripts/eval_logit_lens.sh) | `analysis/{ds}_{tmpl}/logit_lens/logit_lens.png` | `LOGIT_LENS=1 bash` [`scripts/test_single.sh`](TEA-GLM/scripts/test_single.sh) | `analysis/{ds}/logit_lens/*_logit_lens.{png,pdf}` |
 
 ## Notes
 
 - TEA-GLM reposition multi-seed aggregation defaults to seeds 42–46; random-pruning sweeps use seeds 123–137. LLaGA uses `--reposition_seed` / `--pruning_seed` with run indices `_run{N}` to disambiguate replicates.
-- For the link-prediction (LP) variants of every experiment above, see [evaluation.md](evaluation.md) (aggregation commands) and the `lp_*.sh` scripts under [LLaGA/scripts/](LLaGA/scripts/) and [TEA-GLM/scripts/](TEA-GLM/scripts/).
+- For the link-prediction (LP) variants of every experiment above, change corresponding flag from node classification task to link prediction task. Also refer to the `lp_*.sh` scripts under [LLaGA/scripts/](LLaGA/scripts/) and [TEA-GLM/scripts/](TEA-GLM/scripts/).
