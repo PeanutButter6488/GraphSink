@@ -1,4 +1,4 @@
-# glm_sink: Graph Sink Analysis for Graph Language Models
+# GraphSink: Graph Sink Analysis for Graph Language Models
 
 This repository contains the experimental code for our study of **attention sinks** in Graph Language Models (GLMs). Attention sinks are graph tokens that consistently receive disproportionate attention and spike on a small set of hidden-state dimensions at the second-to-last transformer layer, largely independent of the downstream query. We probe whether these tokens are *causally* important for task performance, or whether they are interpretable artifacts of the LLM's attention machinery — and we do this in parallel across two representative GLMs so the findings are not specific to one architecture.
 
@@ -25,7 +25,6 @@ glm_sink/
 │   ├── utils/                      # activation, attention_probe, sink_pruning, logit_lens
 │   ├── analysis/                   # generated: per-dataset global_stats/, logit_lens/
 │   └── results/                    # generated: prediction *.txt per experiment
-├── evaluation.md                   # legacy LP-task aggregation command snippets
 └── README.md                       # this file
 ```
 
